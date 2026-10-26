@@ -2,12 +2,11 @@
 .env
 secrets.h
 
-# other faces, not published yet
-faces/7-seg/
-faces/brick-face/
-faces/the-blob/
+# only my-face is published; any other face folder stays local
+faces/*
+!faces/my-face/
 
-# raw head scans: too big for GitHub; face_normals.h has everything the watch needs
+# raw head scans: yours stay yours (and they are too big for GitHub anyway)
 *.obj
 *.npz
 

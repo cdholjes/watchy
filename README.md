@@ -135,6 +135,8 @@ drain the battery.
 `emulator/` builds a face against stub versions of the Watchy, Arduino and ESP-IDF APIs and runs it as a
 normal Mac program. A small Python server drives it and streams every frame to a browser page.
 
+<p align="center"><img src="docs/images/emulator.png" alt="The emulator in a browser: the watch face on the left, with time, motion, sensor and e-ink controls on the right"></p>
+
 ```sh
 cd emulator
 python3 server.py            # builds faces/my-face (after Step 1), serves http://localhost:8077
@@ -152,7 +154,11 @@ before uploading, because ESP-IDF name clashes only show up there.
 
 ---
 
-## Step 1 — scan your head
+## How to make your face
+
+Two steps: bake your head on your computer, then build the face and flash it to the watch.
+
+### Step 1 — scan your head
 
 The repo has the face and the tools, but **no head**: my scans and the `face_normals.h` baked from them
 stay on my machine. The face needs a head to draw, so start by making one from your own:
@@ -191,7 +197,7 @@ stay on my machine. The face needs a head to draw, so start by making one from y
    rebuilds as soon as the new `face_normals.h` appears. The face reads the box size and position from the
    header, so no C++ changes are needed.
 
-## Step 2 — build & upload
+### Step 2 — build & upload
 
 **Needs:** [arduino-cli](https://arduino.github.io/arduino-cli/) with the `esp32:esp32` core (3.3.x),
 plus the Watchy library (1.4.x) and its dependencies (Adafruit GFX, GxEPD2, Arduino_JSON, Time,
