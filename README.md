@@ -1,9 +1,11 @@
 # My Face — a Watchy face made from a 3D scan of my head
 
 <p align="center">
-  <img src="docs/images/light-orbit.gif" width="260" alt="The head on the watch, lit by a light circling once around it">
-  &nbsp;&nbsp;
-  <img src="docs/images/clear-10am.png" width="260" alt="10:10 on a clear morning">
+  <img src="docs/images/light-orbit.gif" width="240" alt="The head on the watch, lit by a light circling once around it">
+  &nbsp;
+  <img src="docs/images/clear-10am.png" width="240" alt="10:10 on a clear morning">
+  &nbsp;
+  <img src="docs/images/head-turn.gif" width="240" alt="The head turning left and right as the watch tilts">
 </p>
 
 A custom face for the [Watchy V3](https://watchy.sqfmi.com/) (ESP32-S3, 200×200 e-ink). The watch shows a
@@ -127,6 +129,9 @@ on the V3. So on each motion wake the face spends up to 0.6 s **checking for a r
 If any check fails, it was a footstep or a keystroke: the face updates the resting position and goes
 straight back to sleep without drawing. Wake-ups are also capped per minute, so a bumpy bus ride can't
 drain the battery.
+
+<p align="center"><img src="docs/images/head-turn.gif" width="240" alt="The head following the watch as it tilts left and right"></p>
+<p align="center"><sub>Raised to look: the head follows the tilt (the dot in the corner means it's awake).</sub></p>
 
 ---
 
