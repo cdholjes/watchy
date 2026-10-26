@@ -252,8 +252,13 @@ emulator/
   core/                emulated watch: display, RTC, accelerometer, sleep, HTTP
   stubs/               Arduino / Watchy / ESP-IDF headers the face compiles against
   web/index.html       the emulator page
-docs/images/           README images (rendered by the emulator)
+docs/images/           README images (rendered by the emulator, plus one photo)
 ```
+
+## On the real watch
+
+<p align="center"><img src="docs/images/real.jpg" width="420" alt="Photo of the Watchy showing the face in night mode at 8:09, 70 degrees"></p>
+<p align="center"><sub>The real e-ink panel after sunset (inverted), 8:09 and 70°.</sub></p>
 
 ## Credits
 
