@@ -255,14 +255,11 @@ emulator/
 docs/images/           README images (rendered by the emulator, plus one photo)
 ```
 
-## On the real watch
-
-<p align="center"><img src="docs/images/real.jpg" width="420" alt="Photo of the Watchy showing the face in night mode at 8:09, 70 degrees"></p>
-<p align="center"><sub>The real e-ink panel after sunset (inverted), 8:09 and 70°.</sub></p>
-
 ## Credits
 
 - [Heges 3D Scanner](https://hege.sh/) by Marek Šimoník: the iPhone app used to scan the head.
 - [Watchy](https://github.com/sqfmi/Watchy) by SQFMI: hardware and base library.
 - Blue-noise pattern from [The Blob](https://github.com/My-Key/TheBlob) by My-Key (MIT).
 - Weather from [OpenWeatherMap](https://openweathermap.org/), jokes from [icanhazdadjoke](https://icanhazdadjoke.com/).
+
+<p align="center"><img src="docs/images/real.jpg" width="180" alt="Photo of the Watchy showing the face in night mode at 8:09, 70 degrees"></p>
