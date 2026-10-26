@@ -1,0 +1,20 @@
+# keys stay local (see faces/my-face/secrets.example.h)
+.env
+secrets.h
+
+# other faces, not published yet
+faces/7-seg/
+faces/brick-face/
+faces/the-blob/
+
+# raw head scans: too big for GitHub; face_normals.h has everything the watch needs
+*.obj
+*.npz
+
+# build output
+emulator/build/
+__pycache__/
+.DS_Store
+
+# your head: the normal maps baked from your own scan (see README, Step 1)
+faces/my-face/face_normals.h

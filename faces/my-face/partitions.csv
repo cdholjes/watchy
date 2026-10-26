@@ -1,0 +1,7 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+# One big app slot instead of two for over-the-air updates (uploads are over USB), to fit the
+# baked face scans. nvs stays where the stock 8MB layout has it, so saved Wi-Fi settings survive.
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  ota_0,   0x10000, 0x7E0000,
+coredump, data, coredump,0x7F0000,0x10000,

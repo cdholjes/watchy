@@ -1,0 +1,2 @@
+# for tools/align_scans.py and tools/make_normal_map.py (tested with Python 3.9, numpy 2.0)
+numpy>=1.22

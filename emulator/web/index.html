@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watchy Emulator</title>
+<style>
+  :root {
+    --bg: #f4f3ef;
+    --panel: #ffffff;
+    --border: #e2e0d9;
+    --text: #1d1c1a;
+    --muted: #6f6c64;
+    --accent: #2f6fdb;
+    --danger: #c2412d;
+    --ok: #2e8a4f;
+    --pcb: #17181a;
+    --pcb-edge: #2a2c30;
+    --paper: #dedcd5;
+    --ink: #1c1c1c;
+    --btn: #b9b6ae;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --panel: #1d1d1b; --border: #34332f; --text: #ecebe6; --muted: #9b988f;
+      --accent: #6b9cf0; --danger: #e5735f; --ok: #5cbf7f; --pcb-edge: #3a3c41;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+  .pill.busy { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .pill.err { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+  main { display: grid; grid-template-columns: minmax(420px, 1fr) minmax(320px, 420px); gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 16px; } }
+
+  /* the watch */
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .watch { position: relative; padding: 34px 30px; background: var(--pcb); border-radius: 26px; border: 2px solid var(--pcb-edge);
+           box-shadow: 0 10px 30px rgba(0,0,0,.25); transition: transform .05s; }
+  .watch.buzz { animation: buzz .08s linear infinite; }
+  @keyframes buzz { 0% { transform: translateX(-2px) } 50% { transform: translateX(2px) } 100% { transform: translateX(-2px) } }
+  .strap-slot { position: absolute; left: 50%; transform: translateX(-50%); width: 46%; height: 9px; border-radius: 5px; background: var(--bg); }
+  .strap-slot.top { top: 11px; } .strap-slot.bottom { bottom: 11px; }
+  .screen-wrap { position: relative; }
+  canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  canvas#screen { display: block; width: 400px; height: 400px; image-rendering: pixelated; border-radius: 3px; background: var(--paper); }
+  @media (max-width: 500px) { canvas#screen { width: calc(100vw - 110px); height: calc(100vw - 110px); } }
+  .hw { position: absolute; width: 14px; height: 54px; border-radius: 4px; background: var(--btn); border: none; cursor: pointer; padding: 0; }
+  .hw:hover { filter: brightness(1.1); } .hw:active, .hw.pressed { transform: scaleX(.7); filter: brightness(.85); }
+  .hw.left { left: -9px; } .hw.right { right: -9px; }
+  .hw.top { top: 70px; } .hw.bottom { bottom: 70px; }
+  .hw-label { position: absolute; font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .hw-label.left { right: calc(100% + 16px); } .hw-label.right { left: calc(100% + 16px); }
+  .hw-label.top { top: 86px; } .hw-label.bottom { bottom: 86px; }
+  kbd { font: 11px ui-monospace, monospace; padding: 0 4px; border: 1px solid var(--border); border-radius: 3px; background: var(--panel); }
+  .readout { display: flex; gap: 14px; font: 12px ui-monospace, monospace; color: var(--muted); flex-wrap: wrap; justify-content: center; }
+  .readout b { color: var(--text); font-weight: 500; }
+
+  .film { width: 100%; max-width: 560px; }
+  .film-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+  .strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+  .strip canvas { width: 64px; height: 64px; image-rendering: pixelated; border: 2px solid transparent; border-radius: 3px; cursor: pointer; flex: none; background: var(--paper); }
+  .strip canvas.sel { border-color: var(--accent); }
+  .strip .meta { font: 10px ui-monospace, monospace; color: var(--muted); text-align: center; }
+
+  /* controls */
+  .panel { display: flex; flex-direction: column; gap: 14px; }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .row:last-child { margin-bottom: 0; }
+  .row label { color: var(--muted); font-size: 13px; min-width: 70px; }
+  button.b { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; }
+  button.b:hover { border-color: var(--accent); }
+  button.b.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.b.on { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); }
+  input, select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  input[type=number] { width: 80px; }
+  input[type=range] { flex: 1; min-width: 100px; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  pre.log { margin: 0; max-height: 180px; overflow: auto; font: 11px/1.5 ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; }
+  pre.err { color: var(--danger); max-height: 260px; }
+  .hint { font-size: 12px; color: var(--muted); margin: 0; }
+  .tilt { display: flex; gap: 14px; align-items: center; }
+  canvas#tilt-pad { width: 150px; height: 150px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border);
+                    touch-action: none; cursor: grab; flex: none; }
+  canvas#tilt-pad:active { cursor: grabbing; }
+  .tilt-read { font: 12px/1.6 ui-monospace, monospace; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Watchy Emulator</h1>
+  <span class="pill" id="face">…</span>
+  <span class="pill" id="build">connecting</span>
+  <span style="flex:1"></span>
+  <span class="hint">Edit the face code and save: it rebuilds and reloads here.</span>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="watch" id="watch">
+      <div class="strap-slot top"></div><div class="strap-slot bottom"></div>
+      <button class="hw left top" data-btn="back" title="Back (Q)"></button>
+      <button class="hw left bottom" data-btn="menu" title="Menu (A)"></button>
+      <button class="hw right top" data-btn="up" title="Up (P)"></button>
+      <button class="hw right bottom" data-btn="down" title="Down (L)"></button>
+      <span class="hw-label left top">Back <kbd>Q</kbd></span>
+      <span class="hw-label left bottom">Menu <kbd>A</kbd></span>
+      <span class="hw-label right top">Up <kbd>P</kbd></span>
+      <span class="hw-label right bottom">Down <kbd>L</kbd></span>
+      <div class="screen-wrap">
+        <canvas id="screen" width="200" height="200"></canvas>
+        <canvas id="overlay" width="400" height="400"></canvas>
+      </div>
+    </div>
+    <div class="readout">
+      <span>watch <b id="rtc">–</b></span>
+      <span>awake <b id="awake">–</b></span>
+      <span>state <b id="gui">–</b></span>
+    </div>
+    <div class="film">
+      <div class="film-head">
+        <span id="film-title">Frames from the last wake-up</span>
+        <span><button class="b" id="replay" title="R">Replay <kbd>R</kbd></button></span>
+      </div>
+      <div class="strip" id="strip"></div>
+      <p class="hint">Click a frame to inspect it, or use <kbd>←</kbd> <kbd>→</kbd>.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <section>
+      <h2>Time</h2>
+      <div class="row">
+        <button class="b primary" id="tick" title="T">Next minute <kbd>T</kbd></button>
+        <button class="b" id="jump">Jump to :00 / :30</button>
+      </div>
+      <div class="row">
+        <button class="b" id="run">Run clock</button>
+        <select id="run-speed">
+          <option value="1">real time</option>
+          <option value="10">10×</option>
+          <option value="60" selected>60× (1 min/s)</option>
+        </select>
+      </div>
+      <div class="row">
+        <input type="datetime-local" id="dt" step="1">
+        <button class="b" id="settime">Set</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Watch</h2>
+      <div class="row">
+        <button class="b" id="boot" title="B">Reset / boot <kbd>B</kbd></button>
+        <button class="b" id="usb">USB unplugged</button>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="rebuild-repeat" checked> After a rebuild, boot and repeat my last button</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Motion</h2>
+      <div class="tilt">
+        <canvas id="tilt-pad" width="300" height="300"></canvas>
+        <div>
+          <div class="tilt-read">roll <b id="tilt-roll">0°</b><br>pitch <b id="tilt-pitch">0°</b></div>
+          <div class="row" style="margin-top:8px">
+            <button class="b" id="tilt-center">Center</button>
+            <button class="b" id="tilt-wobble">Wobble</button>
+          </div>
+          <p class="hint" id="tilt-status">Drag to tilt the watch: left/right turns, up/down nods.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sensors</h2>
+      <div class="row"><label>Battery</label><input type="range" id="batt" min="3.0" max="4.2" step="0.05" value="4.0"><span id="batt-v" style="font:12px ui-monospace,monospace">4.00V</span></div>
+      <div class="row"><label>Steps</label><input type="number" id="steps" value="1234" min="0"></div>
+      <div class="row">
+        <label>Weather</label>
+        <input type="number" id="temp" value="21">
+        <select id="wcode">
+          <option value="800">Clear</option>
+          <option value="801">Few clouds</option>
+          <option value="803">Cloudy</option>
+          <option value="500">Rain</option>
+          <option value="502">Heavy rain</option>
+          <option value="300">Drizzle</option>
+          <option value="200">Thunder</option>
+          <option value="600">Snow</option>
+          <option value="741">Fog</option>
+        </select>
+        <label class="check"><input type="checkbox" id="metric" checked> °C</label>
+      </div>
+      <div class="row"><label class="check"><input type="checkbox" id="wifi" checked> Wi-Fi available</label></div>
+      <div class="row"><label class="check"><input type="checkbox" id="liveweather" checked> Live weather</label></div>
+      <p class="hint">Live: faces that fetch weather ask the real service through this Mac (answers cached 10 min). Off: they get the values above.</p>
+    </section>
+
+    <section>
+      <h2>E-ink</h2>
+      <div class="row">
+        <label>Playback</label>
+        <select id="speed">
+          <option value="0.25">¼× slow motion</option>
+          <option value="0.5">½×</option>
+          <option value="1" selected>1× (real panel)</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="ghost" checked> Ghosting on fast updates</label>
+        <label class="check"><input type="checkbox" id="flash" checked> Flash on full refresh</label>
+      </div>
+      <div class="row">
+        <label>Overlay</label>
+        <select id="grid">
+          <option value="off">none</option>
+          <option value="cells">8px grid</option>
+          <option value="bricks">brick pattern</option>
+        </select>
+        <span class="hint">key <kbd>G</kbd></span>
+      </div>
+    </section>
+
+    <section id="err-box" hidden>
+      <h2 style="color:var(--danger)">Build error</h2>
+      <pre class="log err" id="err"></pre>
+    </section>
+
+    <section>
+      <h2>Log</h2>
+      <pre class="log" id="log"></pre>
+    </section>
+  </div>
+</main>
+
+<script>
+const W = 200, H = 200;
+const GUI = { "-1": "watch face", "0": "menu", "1": "app", "2": "update" };
+const $ = id => document.getElementById(id);
+const screen = $("screen").getContext("2d");
+const img = screen.createImageData(W, H);
+
+function cssColor(name) {
+  const c = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const m = c.match(/^#(..)(..)(..)$/);
+  return m ? m.slice(1).map(h => parseInt(h, 16)) : [0, 0, 0];
+}
+const PAPER = cssColor("--paper"), INK = cssColor("--ink");
+
+// ---------- panel model ----------
+let shown = new Uint8Array(W * H).fill(1);  // what the panel shows: 1 = white
+let ghost = new Float32Array(W * H);        // leftover tint from fast updates: + darker, - lighter
+
+function decode(b64) {
+  const bin = atob(b64), px = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) px[i] = (bin.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1;
+  return px;
+}
+
+function paint(px, g) {
+  const d = img.data;
+  for (let i = 0; i < W * H; i++) {
+    let t = px[i] ? 0 : 1;                       // 0 = paper, 1 = ink
+    if (g) t = Math.min(1, Math.max(0, t + g[i]));
+    for (let k = 0; k < 3; k++) d[i * 4 + k] = PAPER[k] + (INK[k] - PAPER[k]) * t;
+    d[i * 4 + 3] = 255;
+  }
+  screen.putImageData(img, 0, 0);
+}
+
+function fill(v) { const px = new Uint8Array(W * H).fill(v); paint(px); }
+
+function applyPartial(px) {
+  if ($("ghost").checked) {
+    for (let i = 0; i < W * H; i++) {
+      ghost[i] *= 0.8;
+      if (px[i] !== shown[i]) ghost[i] += shown[i] ? -0.0 : 0.16;  // ink that was removed leaves a shadow
+    }
+  }
+  shown = px;
+  paint(shown, $("ghost").checked ? ghost : null);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let playToken = 0;
+
+async function applyFull(px, speed, token) {
+  ghost.fill(0);
+  if ($("flash").checked) {
+    const inv = shown.map(v => v ^ 1);
+    for (const step of [inv, 0, 1, px.map(v => v ^ 1), 0, 1]) {
+      if (token !== playToken) return;
+      if (typeof step === "number") fill(step); else paint(step);
+      await sleep(180 / speed);
+    }
+  }
+  shown = px;
+  paint(shown);
+}
+
+// ---------- playback of a wake-up ----------
+let lastFrames = [];
+let queue = Promise.resolve();
+
+function enqueuePlayback(reply) {
+  queue = queue.then(() => play(reply));
+  return queue;
+}
+
+async function play(reply) {
+  const token = ++playToken;
+  const speed = parseFloat($("speed").value);
+  const frames = reply.frames.map(f => ({ ...f, px: decode(f.bits) }));
+  if (frames.length) { lastFrames = frames; renderStrip(); }
+  const events = [
+    ...frames.map(f => ({ t: f.t, kind: "frame", f })),
+    ...reply.vibes.map(v => ({ t: v.t, kind: "vibe", v })),
+  ].sort((a, b) => a.t - b.t);
+  const start = performance.now();
+  for (const e of events) {
+    const wait = e.t / speed - (performance.now() - start);
+    if (wait > 0) await sleep(wait);
+    if (token !== playToken) return;
+    if (e.kind === "vibe") buzz(e.v.ms / speed);
+    else {
+      selectThumb(frames.indexOf(e.f));
+      if (e.f.partial) applyPartial(e.f.px); else await applyFull(e.f.px, speed, token);
+    }
+  }
+  $("awake").textContent = (reply.awakeMs / 1000).toFixed(1) + "s";
+}
+
+function buzz(ms) {
+  const w = $("watch");
+  w.classList.add("buzz");
+  setTimeout(() => w.classList.remove("buzz"), Math.max(ms, 120));
+}
+
+// ---------- live stream (the emulator runs in real time) ----------
+let streamSeq = -1; // -1 until the first poll tells us where the stream is
+let streamQueue = Promise.resolve();
+let collecting = []; // frames since the last action, for the filmstrip
+
+function showStreamed(item) {
+  if (item.vibe) { buzz(item.vibe.ms); return; }
+  const f = { ...item.frame, px: decode(item.frame.bits) };
+  collecting.push(f);
+  lastFrames = collecting;
+  renderStripTail();
+  streamQueue = streamQueue.then(async () => {
+    const token = ++playToken;
+    selectThumb(lastFrames.indexOf(f));
+    if (f.partial) applyPartial(f.px); else await applyFull(f.px, 1, token);
+  });
+}
+
+async function streamLoop() {
+  try {
+    const d = await (await fetch(`/api/frames?after=${streamSeq}`)).json();
+    if (streamSeq < 0) { streamSeq = d.seq; setTimeout(streamLoop, 80); return; } // page just opened: skip the history
+    if (d.seq < streamSeq) streamSeq = 0; // server restarted
+    for (const item of d.items) { streamSeq = item.seq; showStreamed(item); }
+  } catch (e) {}
+  setTimeout(streamLoop, 80);
+}
+
+// ---------- filmstrip ----------
+function renderStripTail() {
+  // append thumbnails for frames that arrived since the strip was last drawn
+  const strip = $("strip");
+  if (strip.children.length > lastFrames.length) strip.innerHTML = "";
+  for (let i = strip.children.length; i < lastFrames.length; i++) strip.append(thumb(lastFrames[i], i));
+  $("film-title").textContent = `${lastFrames.length} frame${lastFrames.length === 1 ? "" : "s"} from the last wake-up`;
+}
+
+function thumb(f, i) {
+  const wrap = document.createElement("div");
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const ctx = c.getContext("2d"), id = ctx.createImageData(W, H);
+  for (let p = 0; p < W * H; p++) {
+    const col = f.px[p] ? PAPER : INK;
+    id.data.set([col[0], col[1], col[2], 255], p * 4);
+  }
+  ctx.putImageData(id, 0, 0);
+  c.onclick = () => inspect(i);
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = `${(f.t / 1000).toFixed(1)}s ${f.partial ? "fast" : "FULL"}`;
+  wrap.append(c, meta);
+  return wrap;
+}
+
+function renderStrip() {
+  const strip = $("strip");
+  strip.innerHTML = "";
+  lastFrames.forEach((f, i) => {
+    const wrap = document.createElement("div");
+    const c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    const ctx = c.getContext("2d"), id = ctx.createImageData(W, H);
+    for (let p = 0; p < W * H; p++) {
+      const col = f.px[p] ? PAPER : INK;
+      id.data.set([col[0], col[1], col[2], 255], p * 4);
+    }
+    ctx.putImageData(id, 0, 0);
+    c.onclick = () => inspect(i);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `${(f.t / 1000).toFixed(1)}s ${f.partial ? "fast" : "FULL"}`;
+    wrap.append(c, meta);
+    strip.append(wrap);
+  });
+  $("film-title").textContent = `${lastFrames.length} frame${lastFrames.length === 1 ? "" : "s"} from the last wake-up`;
+}
+
+let selected = -1;
+function selectThumb(i) {
+  selected = i;
+  [...$("strip").querySelectorAll("canvas")].forEach((c, k) => c.classList.toggle("sel", k === i));
+  const el = $("strip").children[i];
+  if (el) el.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function inspect(i) {
+  if (!lastFrames[i]) return;
+  playToken++;
+  selectThumb(i);
+  shown = lastFrames[i].px;
+  ghost.fill(0);
+  paint(shown);
+}
+
+// ---------- talking to the emulator ----------
+let version = 0;
+let lastButton = null;
+
+function logLines(lines) {
+  if (!lines.length) return;
+  const el = $("log");
+  const stamp = new Date().toLocaleTimeString();
+  el.textContent = lines.map(l => `${stamp}  ${l}`).join("\n") + "\n" + el.textContent;
+  el.textContent = el.textContent.split("\n").slice(0, 200).join("\n");
+}
+
+async function send(cmds, label) {
+  if (cmds.some(c => /^(boot|tick|button|usb|motion|redraw)/.test(c))) { collecting = []; }
+  inFlight++;
+  let data;
+  try {
+    const res = await fetch("/api/cmd", { method: "POST", body: JSON.stringify({ cmds }) });
+    data = await res.json();
+  } finally { inFlight--; }
+  for (const r of data.replies) {
+    if (!r.ok) { logLines([`error: ${r.error}`]); continue; }
+    $("rtc").textContent = r.rtc;
+    $("gui").textContent = GUI[r.guiState] ?? r.guiState;
+    $("usb").textContent = r.usb ? "USB plugged in" : "USB unplugged";
+    $("usb").classList.toggle("on", r.usb);
+    worldTime = r.world;
+    logLines(r.log);
+    if (r.frames.length || r.vibes.length) enqueuePlayback(r);
+  }
+  if (label) logLines([label]);
+  return data.replies;
+}
+
+let worldTime = null;
+
+function settingsCmds() {
+  return [
+    `battery ${$("batt").value}`,
+    `steps ${$("steps").value || 0}`,
+    `weather ${$("temp").value || 0} ${$("wcode").value} ${$("metric").checked ? 1 : 0}`,
+    `wifi ${$("wifi").checked ? 1 : 0}`,
+    `liveweather ${$("liveweather").checked ? 1 : 0}`,
+  ];
+}
+
+function timeCmd(str) {
+  const m = str && str.match(/(\d+)-(\d+)-(\d+)[ T](\d+):(\d+)(?::(\d+))?/);
+  return m ? `settime ${m[1]} ${+m[2]} ${+m[3]} ${+m[4]} ${+m[5]} ${+(m[6] || 0)}` : null;
+}
+
+async function press(btn) {
+  lastButton = btn;
+  const el = document.querySelector(`.hw[data-btn="${btn}"]`);
+  el.classList.add("pressed");
+  setTimeout(() => el.classList.remove("pressed"), 150);
+  await send([`button ${btn}`], `pressed ${btn}`);
+}
+
+async function boot(label = "booted") {
+  const cmds = [...settingsCmds()];
+  const t = timeCmd(worldTime);
+  if (t) cmds.unshift(t);
+  cmds.push("boot");
+  await send(cmds, label);
+}
+
+// ---------- design overlay ----------
+const CELL = 8;
+function drawOverlay() {
+  const c = $("overlay"), ctx = c.getContext("2d"), k = c.width / W;
+  ctx.clearRect(0, 0, c.width, c.height);
+  const mode = $("grid").value;
+  if (mode === "off") return;
+  ctx.lineWidth = 1;
+  for (let row = 0; row * CELL < H; row++) {
+    const y = row * CELL * k;
+    // every 5th line is stronger so cell counts are easy to read
+    ctx.strokeStyle = row % 5 === 0 ? "rgba(230,60,60,.75)" : "rgba(230,60,60,.35)";
+    ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(c.width, y + .5); ctx.stroke();
+    const shift = mode === "bricks" && row % 2 ? CELL / 2 : 0;
+    for (let col = 0; col * CELL - shift <= W; col++) {
+      const x = (col * CELL - shift) * k;
+      ctx.strokeStyle = mode === "cells" && col % 5 === 0 ? "rgba(230,60,60,.75)" : "rgba(230,60,60,.35)";
+      ctx.beginPath(); ctx.moveTo(x + .5, y); ctx.lineTo(x + .5, y + CELL * k); ctx.stroke();
+    }
+  }
+}
+$("grid").onchange = drawOverlay;
+
+// ---------- motion ----------
+const MAX_TILT = 30; // degrees at the edge of the pad, a bit past the furthest baked head angle
+let inFlight = 0; // commands the emulator is still running; while it's awake it reads the tilt itself
+
+// moving the watch fires the accelerometer's motion interrupt, which wakes a sleeping watch
+// (if the face armed it); while it's awake the face just follows the tilt
+function motionWake() {
+  if (!inFlight) send(["motion"]);
+}
+
+function updateTiltStatus() {
+  $("tilt-status").textContent = inFlight
+    ? "Awake: following the tilt."
+    : "Asleep: moving the pad wakes it, like moving your wrist.";
+}
+setInterval(updateTiltStatus, 300);
+let tilt = { x: 0, y: 0 }; // -1..1
+let accelTimer = null, wobbleTimer = null;
+
+function drawTiltPad() {
+  const c = $("tilt-pad"), ctx = c.getContext("2d"), r = c.width / 2;
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--border");
+  ctx.lineWidth = 2;
+  for (const f of [0.33, 0.66]) { ctx.beginPath(); ctx.arc(r, r, r * f, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(r, 10); ctx.lineTo(r, c.height - 10); ctx.moveTo(10, r); ctx.lineTo(c.width - 10, r); ctx.stroke();
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent");
+  ctx.beginPath(); ctx.arc(r + tilt.x * (r - 18), r + tilt.y * (r - 18), 16, 0, Math.PI * 2); ctx.fill();
+}
+
+function setTilt(x, y) {
+  const len = Math.hypot(x, y);
+  if (len > 1) { x /= len; y /= len; }
+  tilt = { x, y };
+  const roll = x * MAX_TILT, pitch = -y * MAX_TILT; // dragging up tips the top of the watch away
+  $("tilt-roll").textContent = `${roll.toFixed(0)}°`;
+  $("tilt-pitch").textContent = `${pitch.toFixed(0)}°`;
+  drawTiltPad();
+  // gravity as the watch's accelerometer would see it, 1024 = 1g
+  const rr = roll * Math.PI / 180, pp = pitch * Math.PI / 180;
+  // the real watch reads every axis sign-flipped (face up is z = -1g), so the pad does too
+  const g = { x: -Math.round(1024 * Math.sin(rr) * Math.cos(pp)), y: -Math.round(1024 * Math.sin(pp)), z: -Math.round(1024 * Math.cos(rr) * Math.cos(pp)) };
+  const post = () => fetch("/api/accel", { method: "POST", body: JSON.stringify(g) }).then(motionWake);
+  if (!accelTimer) {
+    accelTimer = setTimeout(() => { accelTimer = null; }, 50);
+    post();
+  } else {
+    clearTimeout(accelTimer);
+    accelTimer = setTimeout(() => { accelTimer = null; post(); }, 50);
+  }
+}
+
+(() => {
+  const pad = $("tilt-pad");
+  const fromEvent = e => {
+    const b = pad.getBoundingClientRect();
+    setTilt((e.clientX - b.left) / b.width * 2 - 1, (e.clientY - b.top) / b.height * 2 - 1);
+  };
+  pad.addEventListener("pointerdown", e => {
+    pad.setPointerCapture(e.pointerId);
+    stopWobble();
+    fromEvent(e);
+  });
+  pad.addEventListener("pointermove", e => { if (e.buttons) fromEvent(e); });
+  drawTiltPad();
+})();
+
+function stopWobble() {
+  if (wobbleTimer) { clearInterval(wobbleTimer); wobbleTimer = null; $("tilt-wobble").classList.remove("on"); }
+}
+$("tilt-center").onclick = () => { stopWobble(); setTilt(0, 0); };
+$("tilt-wobble").onclick = () => {
+  if (wobbleTimer) { stopWobble(); return; }
+  const start = performance.now();
+  wobbleTimer = setInterval(() => {
+    const t = (performance.now() - start) / 1000;
+    setTilt(0.8 * Math.sin(t * 1.1), 0.5 * Math.sin(t * 0.7));
+  }, 100);
+  $("tilt-wobble").classList.add("on");
+};
+
+// ---------- wiring ----------
+document.querySelectorAll(".hw").forEach(b => b.onclick = () => press(b.dataset.btn));
+$("tick").onclick = () => send(["tick"], "next minute");
+$("jump").onclick = async () => {
+  // put the watch just before the next :00 or :30 and let the minute tick over
+  const [r] = await send(["state"]);
+  const m = r.rtc.match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+  let [Y, Mo, D, h, mi] = m.slice(1).map(Number);
+  let target = mi < 30 ? 29 : 59;
+  await send([`settime ${Y} ${Mo} ${D} ${h} ${target} 55`, "tick"], `jumped to ${String(h).padStart(2, "0")}:${target + 1 === 60 ? "00" : "30"}`);
+};
+$("settime").onclick = () => { const c = timeCmd($("dt").value); if (c) send([c, "tick"], "time set"); };
+$("boot").onclick = () => boot();
+$("usb").onclick = () => send([`usb ${$("usb").classList.contains("on") ? 0 : 1}`]);
+$("replay").onclick = () => lastFrames.length && enqueuePlayback({ frames: lastFrames.map(({ px, ...f }) => f), vibes: [], awakeMs: 0 });
+
+$("batt").oninput = () => $("batt-v").textContent = (+$("batt").value).toFixed(2) + "V";
+for (const id of ["batt", "steps", "temp", "wcode", "metric", "wifi", "liveweather"]) {
+  $(id).onchange = () => send([...settingsCmds(), "redraw"], "sensors updated");
+}
+
+let runTimer = null;
+$("run").onclick = () => {
+  if (runTimer) { clearInterval(runTimer); runTimer = null; $("run").classList.remove("on"); $("run").textContent = "Run clock"; return; }
+  const every = 60000 / parseFloat($("run-speed").value);
+  runTimer = setInterval(() => send(["tick"]), every);
+  $("run").classList.add("on"); $("run").textContent = "Stop clock";
+};
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, select")) return;
+  const k = e.key.toLowerCase();
+  const map = { q: "back", a: "menu", p: "up", l: "down" };
+  if (map[k]) press(map[k]);
+  else if (k === "t") $("tick").click();
+  else if (k === "b") $("boot").click();
+  else if (k === "r") $("replay").click();
+  else if (k === "g") { const g = $("grid"); g.selectedIndex = (g.selectedIndex + 1) % g.options.length; drawOverlay(); }
+  else if (e.key === "ArrowRight") inspect(Math.min(lastFrames.length - 1, selected + 1));
+  else if (e.key === "ArrowLeft") inspect(Math.max(0, selected - 1));
+});
+
+// set the date picker to now
+(() => {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  $("dt").value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+})();
+
+// ---------- build status / hot reload ----------
+async function poll() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    $("face").textContent = s.face;
+    const b = $("build");
+    $("err-box").hidden = !s.error;
+    $("err").textContent = s.error || "";
+    if (s.building) { b.className = "pill busy"; b.textContent = "building…"; }
+    else if (s.error) { b.className = "pill err"; b.textContent = "build failed"; }
+    else { b.className = "pill ok"; b.textContent = `v${s.version}`; }
+    if (!s.building && !s.error && s.version !== version) {
+      const first = version === 0;
+      version = s.version;
+      if (first) await boot("booted");
+      else {
+        await boot(`rebuilt (v${version}) and rebooted`);
+        if ($("rebuild-repeat").checked && lastButton) await press(lastButton);
+      }
+    }
+  } catch (e) {
+    const b = $("build"); b.className = "pill err"; b.textContent = "server stopped";
+  }
+  setTimeout(poll, 800);
+}
+poll();
+streamLoop();
+</script>
+</body>
+</html>

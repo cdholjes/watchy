@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="960" height="330" rx="14" fill="#fafaf8" stroke="#ddd"/>
+
+  <text x="24" y="34" font-size="13" font-weight="700" fill="#888" letter-spacing="1.5">ON THE MAC · ONCE</text>
+  <text x="936" y="196" font-size="13" font-weight="700" fill="#888" letter-spacing="1.5" text-anchor="end">ON THE WATCH · EVERY WAKE</text>
+  <line x1="24" y1="168" x2="936" y2="168" stroke="#e2e2de" stroke-dasharray="4 4"/>
+
+  <!-- offline row -->
+  <g font-size="14" fill="#222">
+    <rect x="24" y="50" width="190" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="40" y="76" font-weight="700">3D head scans</text>
+    <text x="40" y="98" fill="#555" font-size="13">me.obj · me-mouth.obj</text>
+    <text x="40" y="118" fill="#555" font-size="13">phone scan, ~1 mm points</text>
+
+    <rect x="258" y="50" width="190" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="274" y="76" font-weight="700">align_scans.py</text>
+    <text x="274" y="98" fill="#555" font-size="13">ICP on brow → nose so</text>
+    <text x="274" y="118" fill="#555" font-size="13">both scans line up</text>
+
+    <rect x="492" y="50" width="200" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="508" y="76" font-weight="700">make_normal_map.py</text>
+    <text x="508" y="98" fill="#555" font-size="13">splat → normals, 11 yaw ×</text>
+    <text x="508" y="118" fill="#555" font-size="13">5 pitch views, 2 mouths</text>
+
+    <rect x="736" y="50" width="200" height="92" rx="10" fill="#eef3ff" stroke="#7d9be0"/>
+    <text x="752" y="76" font-weight="700">face_normals.h</text>
+    <text x="752" y="98" fill="#555" font-size="13">110 normal maps baked</text>
+    <text x="752" y="118" fill="#555" font-size="13">into flash (~3.6 MB)</text>
+  </g>
+  <g stroke="#555" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <path d="M214 96 H254"/>
+    <path d="M448 96 H488"/>
+    <path d="M692 96 H732"/>
+    <path d="M836 142 V180 H120 V208"/>
+  </g>
+
+  <!-- watch row -->
+  <g font-size="14" fill="#222">
+    <rect x="24" y="212" width="190" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="40" y="238" font-weight="700">Pick a view</text>
+    <text x="40" y="260" fill="#555" font-size="13">from the accelerometer</text>
+    <text x="40" y="280" fill="#555" font-size="13">(head turns to face you)</text>
+
+    <rect x="258" y="212" width="190" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="274" y="238" font-weight="700">Light it</text>
+    <text x="274" y="260" fill="#555" font-size="13">key light from the hour,</text>
+    <text x="274" y="280" fill="#555" font-size="13">rim light from the minute</text>
+
+    <rect x="492" y="212" width="200" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="508" y="238" font-weight="700">Weather &amp; battery</text>
+    <text x="508" y="260" fill="#555" font-size="13">cloud softens, rain, fog,</text>
+    <text x="508" y="280" fill="#555" font-size="13">night inverts, low = dim</text>
+
+    <rect x="736" y="212" width="200" height="92" rx="10" fill="#222" stroke="#222"/>
+    <text x="752" y="238" font-weight="700" fill="#fff">Blue-noise dither</text>
+    <text x="752" y="260" fill="#ccc" font-size="13">grey → black/white dots</text>
+    <text x="752" y="280" fill="#ccc" font-size="13">on the 200×200 e-ink</text>
+  </g>
+  <g stroke="#555" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <path d="M214 258 H254"/>
+    <path d="M448 258 H488"/>
+    <path d="M692 258 H732"/>
+  </g>
+</svg>

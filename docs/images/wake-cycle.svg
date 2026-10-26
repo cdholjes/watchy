@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 370" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="960" height="370" rx="14" fill="#fafaf8" stroke="#ddd"/>
+
+  <!-- sleep -->
+  <rect x="24" y="104" width="180" height="92" rx="46" fill="#222"/>
+  <text x="114" y="146" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">Deep sleep</text>
+  <text x="114" y="168" font-size="13" fill="#ccc" text-anchor="middle">screen keeps the image</text>
+
+  <!-- wake sources -->
+  <g font-size="14" fill="#222">
+    <rect x="270" y="24" width="250" height="64" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="286" y="50" font-weight="700">RTC alarm · every minute</text>
+    <text x="286" y="70" fill="#555" font-size="13">time, battery, hourly weather</text>
+
+    <rect x="270" y="118" width="250" height="64" rx="10" fill="#fff" stroke="#bbb"/>
+    <text x="286" y="144" font-weight="700">Button</text>
+    <text x="286" y="164" fill="#555" font-size="13">Menu · Back · Up · Down</text>
+
+    <rect x="270" y="212" width="250" height="64" rx="10" fill="#eef3ff" stroke="#7d9be0"/>
+    <text x="286" y="238" font-weight="700">Accelerometer any-motion</text>
+    <text x="286" y="258" fill="#555" font-size="13">BMA423 interrupt on GPIO14</text>
+  </g>
+
+  <!-- raise check -->
+  <path d="M600 244 l70 -32 l70 32 l-70 32 z" fill="#fff" stroke="#7d9be0"/>
+  <text x="670" y="241" font-size="13" font-weight="700" fill="#222" text-anchor="middle">raised to</text>
+  <text x="670" y="257" font-size="13" font-weight="700" fill="#222" text-anchor="middle">look?</text>
+
+  <rect x="776" y="104" width="160" height="92" rx="10" fill="#fff" stroke="#bbb"/>
+  <text x="856" y="140" font-size="14" font-weight="700" fill="#222" text-anchor="middle">Draw the face</text>
+  <text x="856" y="162" font-size="13" fill="#555" text-anchor="middle">e-ink refresh</text>
+
+  <g stroke="#555" stroke-width="1.6" fill="none" marker-end="url(#a)">
+    <path d="M204 150 C236 150 240 56 266 56"/>
+    <path d="M204 150 H266"/>
+    <path d="M204 150 C236 150 240 244 266 244"/>
+    <path d="M520 56 C700 56 740 120 772 124"/>
+    <path d="M520 150 H772"/>
+    <path d="M520 244 H596"/>
+    <path d="M670 212 C670 186 720 176 772 176"/>
+  </g>
+  <g stroke="#555" stroke-width="1.6" fill="none">
+    <path d="M900 196 V330 H114"/>
+    <path d="M670 276 V330"/>
+  </g>
+  <path d="M114 330 V202" stroke="#555" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <text x="574" y="202" font-size="12" fill="#2d7a3e" font-weight="700">yes: follow tilt</text>
+  <text x="680" y="304" font-size="12" fill="#a33" font-weight="700">no: walking / typing</text>
+  <text x="480" y="352" font-size="12" fill="#888" text-anchor="middle">back to sleep: the face sleeps itself so the accelerometer stays armed</text>
+</svg>
